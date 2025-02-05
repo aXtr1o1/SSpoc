@@ -8,14 +8,14 @@ export default function Navbar() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed top-4 left-1/2 -translate-x-1/2 z-50 rounded-full bg-black/20 backdrop-blur-xl border border-white/10">
+    <nav className="fixed top-4 left-1/2 -translate-x-1/2 z-50 rounded-full bg-black/30 backdrop-blur-md border border-white/20 shadow-lg">
       <div className="px-8 py-4">
         <div className="flex items-center justify-center space-x-12">
           <Link
             href="/"
             className={cn(
-              "text-lg font-medium transition-colors",
-              pathname === "/" ? "text-white" : "text-white/70 hover:text-white/90"
+              "relative text-lg font-medium transition-colors px-4 py-2 rounded-lg",
+              pathname === "/" ? "text-white bg-white/10 backdrop-blur-md" : "text-white/70 hover:text-white/90"
             )}
           >
             StartUps
@@ -23,8 +23,8 @@ export default function Navbar() {
           <Link
             href="/investors"
             className={cn(
-              "text-lg transition-colors",
-              pathname === "/investors" ? "text-white" : "text-white/70 hover:text-white/90"
+              "relative text-lg transition-colors px-4 py-2 rounded-lg",
+              pathname === "/investors" ? "text-white bg-white/10 backdrop-blur-md" : "text-white/70 hover:text-white/90"
             )}
           >
             Investors
@@ -32,8 +32,8 @@ export default function Navbar() {
           <Link
             href="/contact"
             className={cn(
-              "text-lg transition-colors",
-              pathname === "/contact" ? "text-white" : "text-white/70 hover:text-white/90"
+              "relative text-lg transition-colors px-4 py-2 rounded-lg",
+              pathname === "/contact" ? "text-white bg-white/10 backdrop-blur-md" : "text-white/70 hover:text-white/90"
             )}
           >
             Contact
