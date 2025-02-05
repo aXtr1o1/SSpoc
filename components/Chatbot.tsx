@@ -1,24 +1,26 @@
-"use client";
+// components/Chatbot.tsx
+"use client"
 
-import { useState, useEffect, useRef } from "react";
-import { Input } from "@/components/ui/input";
-import { Upload, Send } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Bodoni_Moda } from "next/font/google";
+import { useState, useEffect, useRef } from "react"
+import { Input } from "@/components/ui/input"
+import { Upload, Send } from 'lucide-react'
+import { motion, AnimatePresence } from "framer-motion"
+import { Bodoni_Moda } from 'next/font/google'
 
-const bodoni = Bodoni_Moda({ subsets: ["latin"] });
+const bodoni = Bodoni_Moda({ subsets: ['latin'] })
 
 type Message = {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-};
+  id: string
+  role: "user" | "assistant"
+  content: string
+}
 
 type ChatbotProps = {
-  channel: "startups" | "investors" | "contact";
-};
+  channel: "startups" | "investors" | "contact"
+}
 
 export default function Chatbot({ channel }: ChatbotProps) {
+  console.log("Chatbot Channel Prop:", channel); // Debug log
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -26,17 +28,24 @@ export default function Chatbot({ channel }: ChatbotProps) {
   const [isUploading, setIsUploading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Load messages from localStorage for the current channel
   useEffect(() => {
-    const savedMessages = localStorage.getItem(`chat-${channel}`);
+    const savedMessages = localStorage.getItem(`${channel}-messages`);
     if (savedMessages) {
-      setMessages(JSON.parse(savedMessages));
+      try {
+        const parsedMessages = JSON.parse(savedMessages);
+        setMessages(parsedMessages);
+      } catch (error) {
+        console.error(`Error parsing ${channel} messages:`, error);
+        localStorage.removeItem(`${channel}-messages`);
+        setMessages([]); // Clear messages if parsing fails
+      }
+    } else {
+      setMessages([]); // Ensure messages are empty if no data
     }
   }, [channel]);
 
-  // Save messages to localStorage whenever they change
   useEffect(() => {
-    localStorage.setItem(`chat-${channel}`, JSON.stringify(messages));
+    localStorage.setItem(`${channel}-messages`, JSON.stringify(messages));
   }, [messages, channel]);
 
   useEffect(() => {
@@ -54,7 +63,7 @@ export default function Chatbot({ channel }: ChatbotProps) {
     const userMessage = {
       id: Date.now().toString(),
       role: "user" as const,
-      content: input,
+      content: input.trim(),
     };
 
     setMessages((prev) => [...prev, userMessage]);
@@ -62,13 +71,12 @@ export default function Chatbot({ channel }: ChatbotProps) {
     setIsLoading(true);
 
     try {
-      // TODO: Implement DeepSeek or other API calls here
-      await new Promise((resolve) => setTimeout(resolve, 1500)); // Simulated delay
+      await new Promise((resolve) => setTimeout(resolve, 1500));
 
       const assistantMessage = {
         id: (Date.now() + 1).toString(),
         role: "assistant" as const,
-        content: `You said: ${input}`,
+        content: `You said: ${input.trim()}`,
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
@@ -80,23 +88,33 @@ export default function Chatbot({ channel }: ChatbotProps) {
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setIsUploading(true);
-      try {
-        await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate file processing
-        setFile(file);
+    const uploadedFile = e.target.files?.[0];
+    if (!uploadedFile) return;
 
-        const systemMessage = {
-          id: Date.now().toString(),
-          role: "assistant" as const,
-          content: `CSV file "${file.name}" has been uploaded. You can now ask questions about its contents.`,
-        };
-        setMessages((prev) => [...prev, systemMessage]);
-      } catch (error) {
-        console.error("Error uploading file:", error);
-      } finally {
-        setIsUploading(false);
+    if (!uploadedFile.name.endsWith('.csv')) {
+      alert('Please upload a CSV file');
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      setFile(uploadedFile);
+
+      const systemMessage = {
+        id: Date.now().toString(),
+        role: "assistant" as const,
+        content: `CSV file "${uploadedFile.name}" has been uploaded. You can now ask questions about its contents.`,
+      };
+
+      setMessages((prev) => [...prev, systemMessage]);
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      alert('Failed to upload file. Please try again.');
+    } finally {
+      setIsUploading(false);
+      if (e.target) {
+        e.target.value = '';
       }
     }
   };
@@ -115,11 +133,14 @@ export default function Chatbot({ channel }: ChatbotProps) {
               className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
             >
               <div
-                className={`rounded-2xl p-4 max-w-[70%] ${
-                  message.role === "user"
-                    ? "bg-black/20 backdrop-blur-lg border border-white/10"
-                    : "bg-white/5 backdrop-blur-sm border border-white/5"
-                }`}
+                className={`
+                  rounded-2xl p-4 max-w-[70%] 
+                  ${
+                    message.role === "user"
+                      ? "bg-black/20 backdrop-blur-lg border border-white/10"
+                      : "bg-white/5 backdrop-blur-sm border border-white/5"
+                  }
+                `}
               >
                 <p className="text-white/90">{message.content}</p>
               </div>
@@ -140,9 +161,12 @@ export default function Chatbot({ channel }: ChatbotProps) {
           />
           <motion.label
             htmlFor="file-upload"
-            className={`flex items-center justify-center w-12 h-12 rounded-full bg-black/20 backdrop-blur-xl border border-white/10 cursor-pointer hover:bg-black/30 transition-colors ${
-              isUploading ? "opacity-50 cursor-not-allowed" : ""
-            }`}
+            className={`
+              flex items-center justify-center w-12 h-12 rounded-full 
+              bg-black/20 backdrop-blur-xl border border-white/10 cursor-pointer 
+              hover:bg-black/30 transition-colors
+              ${isUploading ? "opacity-50 cursor-not-allowed" : ""}
+            `}
             whileTap={{ scale: 0.95 }}
           >
             {isUploading ? (
@@ -161,9 +185,11 @@ export default function Chatbot({ channel }: ChatbotProps) {
             />
             <motion.button
               type="submit"
-              className={`w-12 h-12 rounded-full bg-black/20 backdrop-blur-xl border border-white/10 hover:bg-black/30 transition-colors p-0 flex items-center justify-center ${
-                isLoading || !input.trim() ? "opacity-50 cursor-not-allowed" : ""
-              }`}
+              className={`
+                w-12 h-12 rounded-full bg-black/20 backdrop-blur-xl border border-white/10 
+                hover:bg-black/30 transition-colors p-0 flex items-center justify-center
+                ${isLoading || !input.trim() ? "opacity-50 cursor-not-allowed" : ""}
+              `}
               whileTap={{ scale: 0.95 }}
               disabled={isLoading || !input.trim()}
             >
@@ -174,5 +200,5 @@ export default function Chatbot({ channel }: ChatbotProps) {
       </div>
       <p className={`${bodoni.className} text-center text-white/50 mt-4 text-sm`}>an aXtr prototype</p>
     </div>
-  );
+  )
 }

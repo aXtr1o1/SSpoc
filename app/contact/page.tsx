@@ -1,5 +1,8 @@
-import Chatbot from '@/components/Chatbot'
+"use client";
+import Chatbot from '@/components/Chatbot';
 
 export default function ContactPage() {
-  return <Chatbot channel="contact" />
+  const channel = "contact"; // Hardcoded for now, make dynamic if needed
+  console.log("Contact Page Channel:", channel); // Debug log
+  return <Chatbot channel={channel} />;
 }
