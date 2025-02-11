@@ -1,24 +1,23 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useRef } from "react"
-import { Input } from "@/components/ui/input"
-import { Upload, Send } from 'lucide-react'
-import { motion, AnimatePresence } from "framer-motion"
-import { Bodoni_Moda } from 'next/font/google'
-import axios from 'axios'
+import { useState, useEffect, useRef } from "react";
+import { Input } from "@/components/ui/input";
+import { Upload, Send, Loader2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Bodoni_Moda } from "next/font/google";
+import axios from "axios";
 
-const bodoni = Bodoni_Moda({ subsets: ['latin'] })
+const bodoni = Bodoni_Moda({ subsets: ["latin"] });
 
 type Message = {
-  id: string
-  role: "user" | "assistant"
-  content: string
-}
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+};
 
 type ChatbotProps = {
-  channel: "startups" | "investors" 
-}
-
+  channel: "startups" | "investors";
+};
 
 export default function Chatbot({ channel }: ChatbotProps) {
   console.log("Chatbot Channel Prop:", channel); // Debug log
@@ -53,10 +52,9 @@ export default function Chatbot({ channel }: ChatbotProps) {
     scrollToBottom();
   }, [messages]);
 
-
   const renderMessageContent = (content: string) => {
     const urlRegex = /(https?:\/\/[^\s]+)/g;
-  
+
     return content.split(urlRegex).map((part, index) => {
       if (part.match(urlRegex)) {
         return (
@@ -96,19 +94,12 @@ export default function Chatbot({ channel }: ChatbotProps) {
     try {
       const formData = new FormData();
       formData.append("csv_file", file);
-      
-      // Conditionally add the correct embedding file
-      // const embeddingFileName = channel === "investors" ? "E:/Axtr/projects/statupSingam/SSpoc/consoleApp/embeddingData/investorEmbeddings.npy" : "E:/Axtr/projects/statupSingam/SSpoc/consoleApp/embeddingData/startupEmbeddings.npy";
-      // const embeddingBlob = new Blob([""], { type: "application/octet-stream" });
-      // formData.append("embedding_file", embeddingBlob, embeddingFileName);
       formData.append("channel", channel);
-
       formData.append("query", input.trim());
 
       const response = await axios.post("http://localhost:5000/query", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      
 
       const assistantMessage = {
         id: (Date.now() + 1).toString(),
@@ -132,8 +123,8 @@ export default function Chatbot({ channel }: ChatbotProps) {
     const uploadedFile = e.target.files?.[0];
     if (!uploadedFile) return;
 
-    if (!uploadedFile.name.endsWith('.csv')) {
-      alert('Please upload a CSV file');
+    if (!uploadedFile.name.endsWith(".csv")) {
+      alert("Please upload a CSV file");
       return;
     }
 
@@ -151,11 +142,11 @@ export default function Chatbot({ channel }: ChatbotProps) {
       setMessages((prev) => [...prev, systemMessage]);
     } catch (error) {
       console.error("Error uploading file:", error);
-      alert('Failed to upload file. Please try again.');
+      alert("Failed to upload file. Please try again.");
     } finally {
       setIsUploading(false);
       if (e.target) {
-        e.target.value = '';
+        e.target.value = "";
       }
     }
   };
@@ -178,6 +169,19 @@ export default function Chatbot({ channel }: ChatbotProps) {
               </div>
             </motion.div>
           ))}
+          {isLoading && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.5 }}
+              className="flex justify-start"
+            >
+              <div className="rounded-2xl p-4 max-w-[70%] bg-black/20 border border-white/10">
+                <Loader2 className="animate-spin w-6 h-6 text-white" />
+              </div>
+            </motion.div>
+          )}
         </AnimatePresence>
         <div ref={messagesEndRef} />
       </div>
@@ -188,13 +192,23 @@ export default function Chatbot({ channel }: ChatbotProps) {
             <Upload className="w-5 h-5 text-white/70" />
           </motion.label>
           <form onSubmit={handleSubmit} className="flex-1 flex gap-2">
-            <Input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Type your message..." className="flex-1 text-white/90" disabled={isLoading} />
-            <motion.button type="submit" disabled={isLoading || !input.trim()}>
-              <Send className="w-5 h-5 text-white/70" />
+            <Input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Type your message..."
+              className="flex-1 text-white/90"
+              disabled={isLoading}
+            />
+            <motion.button type="submit" disabled={isLoading || !input.trim()} className="relative">
+              {isLoading ? (
+                <Loader2 className="animate-spin w-5 h-5 text-white/70" />
+              ) : (
+                <Send className="w-5 h-5 text-white/70" />
+              )}
             </motion.button>
           </form>
         </div>
       </div>
     </div>
-  )
+  );
 }
