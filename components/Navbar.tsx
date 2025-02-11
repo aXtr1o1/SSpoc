@@ -29,7 +29,7 @@ export default function Navbar() {
           >
             Investors
           </Link>
-          <Link
+          {/* <Link
             href="/contact"
             className={cn(
               "relative text-lg transition-colors px-4 py-2 rounded-lg",
@@ -37,7 +37,7 @@ export default function Navbar() {
             )}
           >
             Contact
-          </Link>
+          </Link> */}
         </div>
       </div>
     </nav>

@@ -17,8 +17,10 @@ import pandas as pd
 import numpy as np
 import openai
 import faiss
+from flask_cors import CORS  # Import CORS
 
 app = Flask(__name__)
+CORS(app)
 
 with open('apiKey.bin', 'r') as f:
     apiKey = f.read() 
@@ -34,7 +36,7 @@ def build_faiss_index(embeddings):
     index.add(embeddings)
     return index
 
-def search_faiss(query, index, k=17):
+def search_faiss(query, index, k=30):
     query_embedding = get_batch_embeddings([query])
     distances, indices = index.search(query_embedding, k)
     return indices[0], distances[0]
@@ -42,6 +44,8 @@ def search_faiss(query, index, k=17):
 def query_gpt_4o_mini(query, retrieved_indices, df):
     retrieved_data = "\n".join([str(df.iloc[idx].to_dict()) for idx in retrieved_indices])
     
+
+    print(retrieved_data)
     prompt = f"""
     You are an expert AI assistant specialized in analyzing startup / investor data. Your task is to provide concise, relevant, and actionable answers to the user query based on the provided data.
 
@@ -56,11 +60,11 @@ def query_gpt_4o_mini(query, retrieved_indices, df):
     response = openai.ChatCompletion.create(
         model="gpt-4o-mini",
         messages=[
-            {"role": "system", "content": "You are a highly efficient AI assistant focused on delivering quick and accurate responses related to startup / investor data."},
+            {"role": "system", "content": "You are a highly efficient AI assistant focused on delivering accurate responses related to startup / investor data. only give the answer to the user query based on the context provided."},
             {"role": "user", "content": prompt}
         ],
         temperature=0.2,
-        max_tokens=150, 
+        max_tokens=1000, 
         top_p=1.0, 
         frequency_penalty=0.0, 
         presence_penalty=0.0 
@@ -74,17 +78,31 @@ def perform_query(query, index, df):
 
 @app.route('/query', methods=['POST'])
 def query():
-    if 'csv_file' not in request.files or 'embedding_file' not in request.files:
-        return jsonify({"error": "CSV file and embedding file are required."}), 400
+
+    if 'csv_file' not in request.files:
+        print("Error: CSV file is missing")
+        return jsonify({"error": "CSV file is required."}), 400
+    
+    if 'query' not in request.form:
+        print("Error: Query is missing")
+        return jsonify({"error": "Query is required."}), 400
     
     csv_file = request.files['csv_file']
-    embedding_file = request.files['embedding_file']
+    channel = request.form.get("channel", "startups")  
+    embedding_file = (
+        "E:/Axtr/projects/statupSingam/SSpoc/consoleApp/embeddingData/investorEmbeddings.npy"
+        if channel == "investors"
+        else "E:/Axtr/projects/statupSingam/SSpoc/consoleApp/embeddingData/startupEmbeddings.npy"
+    )
+
+
     query_text = request.form['query']
     df = pd.read_csv(csv_file)
     embeddings = np.load(embedding_file)
     index = build_faiss_index(embeddings)
     result = perform_query(query_text, index, df)
+    print(result)
     return jsonify({"result": result})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True,port=5000)

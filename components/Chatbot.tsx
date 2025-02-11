@@ -1,4 +1,3 @@
-// components/Chatbot.tsx
 "use client"
 
 import { useState, useEffect, useRef } from "react"
@@ -6,6 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Upload, Send } from 'lucide-react'
 import { motion, AnimatePresence } from "framer-motion"
 import { Bodoni_Moda } from 'next/font/google'
+import axios from 'axios'
 
 const bodoni = Bodoni_Moda({ subsets: ['latin'] })
 
@@ -16,8 +16,9 @@ type Message = {
 }
 
 type ChatbotProps = {
-  channel: "startups" | "investors" | "contact"
+  channel: "startups" | "investors" 
 }
+
 
 export default function Chatbot({ channel }: ChatbotProps) {
   console.log("Chatbot Channel Prop:", channel); // Debug log
@@ -37,10 +38,10 @@ export default function Chatbot({ channel }: ChatbotProps) {
       } catch (error) {
         console.error(`Error parsing ${channel} messages:`, error);
         localStorage.removeItem(`${channel}-messages`);
-        setMessages([]); // Clear messages if parsing fails
+        setMessages([]);
       }
     } else {
-      setMessages([]); // Ensure messages are empty if no data
+      setMessages([]);
     }
   }, [channel]);
 
@@ -52,13 +53,35 @@ export default function Chatbot({ channel }: ChatbotProps) {
     scrollToBottom();
   }, [messages]);
 
+
+  const renderMessageContent = (content: string) => {
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+  
+    return content.split(urlRegex).map((part, index) => {
+      if (part.match(urlRegex)) {
+        return (
+          <a
+            key={index}
+            href={part}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-500 underline"
+          >
+            {part}
+          </a>
+        );
+      }
+      return part;
+    });
+  };
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isLoading || !file) return;
 
     const userMessage = {
       id: Date.now().toString(),
@@ -71,17 +94,35 @@ export default function Chatbot({ channel }: ChatbotProps) {
     setIsLoading(true);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const formData = new FormData();
+      formData.append("csv_file", file);
+      
+      // Conditionally add the correct embedding file
+      // const embeddingFileName = channel === "investors" ? "E:/Axtr/projects/statupSingam/SSpoc/consoleApp/embeddingData/investorEmbeddings.npy" : "E:/Axtr/projects/statupSingam/SSpoc/consoleApp/embeddingData/startupEmbeddings.npy";
+      // const embeddingBlob = new Blob([""], { type: "application/octet-stream" });
+      // formData.append("embedding_file", embeddingBlob, embeddingFileName);
+      formData.append("channel", channel);
+
+      formData.append("query", input.trim());
+
+      const response = await axios.post("http://localhost:5000/query", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      
 
       const assistantMessage = {
         id: (Date.now() + 1).toString(),
         role: "assistant" as const,
-        content: `You said: ${input.trim()}`,
+        content: response.data.result,
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
       console.error("Error:", error);
+      setMessages((prev) => [
+        ...prev,
+        { id: Date.now().toString(), role: "assistant", content: "Failed to get a response from the server." },
+      ]);
     } finally {
       setIsLoading(false);
     }
@@ -132,17 +173,8 @@ export default function Chatbot({ channel }: ChatbotProps) {
               transition={{ duration: 0.3 }}
               className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
             >
-              <div
-                className={`
-                  rounded-2xl p-4 max-w-[70%] 
-                  ${
-                    message.role === "user"
-                      ? "bg-black/20 backdrop-blur-lg border border-white/10"
-                      : "bg-white/5 backdrop-blur-sm border border-white/5"
-                  }
-                `}
-              >
-                <p className="text-white/90">{message.content}</p>
+              <div className={`rounded-2xl p-4 max-w-[70%] bg-black/20 border border-white/10`}>
+                <p className="text-white/90 whitespace-pre-line">{renderMessageContent(message.content)}</p>
               </div>
             </motion.div>
           ))}
@@ -151,54 +183,18 @@ export default function Chatbot({ channel }: ChatbotProps) {
       </div>
       <div className="p-4">
         <div className="relative flex items-center gap-2">
-          <input
-            type="file"
-            id="file-upload"
-            accept=".csv"
-            onChange={handleFileUpload}
-            className="hidden"
-            disabled={isUploading}
-          />
-          <motion.label
-            htmlFor="file-upload"
-            className={`
-              flex items-center justify-center w-12 h-12 rounded-full 
-              bg-black/20 backdrop-blur-xl border border-white/10 cursor-pointer 
-              hover:bg-black/30 transition-colors
-              ${isUploading ? "opacity-50 cursor-not-allowed" : ""}
-            `}
-            whileTap={{ scale: 0.95 }}
-          >
-            {isUploading ? (
-              <div className="w-5 h-5 border-2 border-white/70 border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <Upload className="w-5 h-5 text-white/70" />
-            )}
+          <input type="file" id="file-upload" accept=".csv" onChange={handleFileUpload} className="hidden" disabled={isUploading} />
+          <motion.label htmlFor="file-upload" className="cursor-pointer">
+            <Upload className="w-5 h-5 text-white/70" />
           </motion.label>
           <form onSubmit={handleSubmit} className="flex-1 flex gap-2">
-            <Input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Type your message..."
-              className="flex-1 bg-black/20 backdrop-blur-xl border-white/10 text-white/90 placeholder:text-white/40 rounded-full px-6 transition-all duration-200 focus:bg-black/30"
-              disabled={isLoading}
-            />
-            <motion.button
-              type="submit"
-              className={`
-                w-12 h-12 rounded-full bg-black/20 backdrop-blur-xl border border-white/10 
-                hover:bg-black/30 transition-colors p-0 flex items-center justify-center
-                ${isLoading || !input.trim() ? "opacity-50 cursor-not-allowed" : ""}
-              `}
-              whileTap={{ scale: 0.95 }}
-              disabled={isLoading || !input.trim()}
-            >
+            <Input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Type your message..." className="flex-1 text-white/90" disabled={isLoading} />
+            <motion.button type="submit" disabled={isLoading || !input.trim()}>
               <Send className="w-5 h-5 text-white/70" />
             </motion.button>
           </form>
         </div>
       </div>
-      <p className={`${bodoni.className} text-center text-white/50 mt-4 text-sm`}>an aXtr prototype</p>
     </div>
   )
 }
