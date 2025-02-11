@@ -17,7 +17,7 @@ import pandas as pd
 import numpy as np
 import openai
 import faiss
-from flask_cors import CORS  # Import CORS
+from flask_cors import CORS
 
 app = Flask(__name__)
 CORS(app)
@@ -36,7 +36,7 @@ def build_faiss_index(embeddings):
     index.add(embeddings)
     return index
 
-def search_faiss(query, index, k=30):
+def search_faiss(query, index, k=17):
     query_embedding = get_batch_embeddings([query])
     distances, indices = index.search(query_embedding, k)
     return indices[0], distances[0]
@@ -84,20 +84,12 @@ Prioritize actionable insights.
 Compare and contrast relevant data points if applicable.
 Where useful, suggest next steps or additional queries the user might ask.
 use emojis to make the response more engaging.
-Example Behavior:
-User Query: "List investors who prefer the Technology sector."
-Response:
-✅ Investors Preferring Technology:
-
-John Doe Ventures (Investment Range: $500K - $2M)
-TechGrowth Capital (Focus: AI, SaaS, Cloud)
-NextGen Angels (Early-stage funding in DeepTech)
 
 dont use ** and ## in your response'''},
             {"role": "user", "content": prompt}
         ],
         temperature=0.2,
-        max_tokens=1000, 
+        max_tokens=2500, 
         top_p=1.0, 
         frequency_penalty=0.0, 
         presence_penalty=0.0 
@@ -123,9 +115,9 @@ def query():
     csv_file = request.files['csv_file']
     channel = request.form.get("channel", "startups")  
     embedding_file = (
-        "E:/Axtr/projects/statupSingam/SSpoc/consoleApp/embeddingData/investorEmbeddings.npy"
+        "/Volumes/ReserveDisk/OpenSourceContribution/aXtrStuff/SSpoc/consoleApp/embeddingData/investorEmbeddings.npy"
         if channel == "investors"
-        else "E:/Axtr/projects/statupSingam/SSpoc/consoleApp/embeddingData/startupEmbeddings.npy"
+        else "/Volumes/ReserveDisk/OpenSourceContribution/aXtrStuff/SSpoc/consoleApp/embeddingData/startupEmbeddings.npy"
     )
 
 

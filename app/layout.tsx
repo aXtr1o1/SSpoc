@@ -17,8 +17,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className="dark">
       <body className={cn(dmSans.className, "bg-[#2A2A2A]")}>
         <ErrorBoundary>
+          <div className="absolute top-4 left-4 text-white text-xl font-bold">aXtrLabs</div>
           <Navbar /> {/* Use Navbar component */}
           <main className="container mx-auto pt-24 px-4 min-h-screen">{children}</main>
+          <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2">
+  an aXtr Prototype
+</div>
         </ErrorBoundary>
       </body>
     </html>
